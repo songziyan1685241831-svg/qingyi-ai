@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 琴一 AI · Qinyi AI 🤖
 
 > 你的专属桌面 AI 陪伴机器人 — 从零开始的完整开源方案
@@ -225,3 +226,7 @@ in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software...
 ```
+=======
+# qingyi-ai
+作者利用单片机创造 AI 陪伴机器人的整个过程
+>>>>>>> dc3c2018d57d080ecc4e0cbcb90bda8e13db250f
