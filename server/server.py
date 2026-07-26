@@ -639,9 +639,10 @@ ${renderField('emotion_style','表情模式','select',[{value:'auto',label:'自�
 </div>
 <div class="card" style="cursor:default">
 <h2 style="font-size:14px;margin-bottom:10px">🎯 固定表情选择</h2>
-<p style="font-size:11px;color:#888;margin-bottom:8px">点击下方表情可设为固定显示：</p>
+<p style="font-size:11px;color:#888;margin-bottom:8px">点一下设为固定，再点一下回到自动识别</p>
+<div id="autoModeBtn" style="text-align:center;padding:10px;background:rgba(0,210,255,0.06);border:1px dashed rgba(0,210,255,0.3);border-radius:8px;cursor:pointer;margin-bottom:10px;font-size:13px;color:#00d2ff" onclick="CFG.fixed_emotion='';CFG.emotion_style='auto';renderEmoji();document.getElementById('emotion_style').value='auto'">🔄 使用自动识别模式</div>
 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px" id="fixedEmojiGrid"></div>
-<div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;text-align:center" id="fixedEmojiDisplay">加载中...</div>
+<div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;text-align:center;font-size:12px" id="fixedEmojiDisplay">加载中...</div>
 </div>
 <div class="card" style="cursor:default">
 <h2 style="font-size:14px;margin-bottom:10px">✏️ 自定义表情符号</h2>
