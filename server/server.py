@@ -359,7 +359,10 @@ async def files_page():
 <style>body{{font-family:sans-serif;background:#0f0c29;color:#e0e0e0;padding:40px;max-width:800px;margin:auto}}h1{{background:linear-gradient(90deg,#00d2ff,#928dab);-webkit-background-clip:text;-webkit-text-fill-color:transparent}}table{{width:100%;border-collapse:collapse;margin-bottom:30px}}th,td{{padding:10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px}}th{{color:#888;font-size:11px;letter-spacing:1px}}a{{color:#00d2ff}}</style></head><body><a href="/config?pwd={CFG.get("config_password","songziyan")}" style="color:#00d2ff;font-size:13px;text-decoration:none">← 返回配置</a><h1>🤖 记录与文件</h1>
 <h2>💬 对话</h2><table>{"<tr><td colspan=4 style=color:#666>暂无</td></tr>" if not sessions else chat_rows}</table>
 <h2>📁 文件 <a href="/api/files/clear" style="font-size:12px;font-weight:normal" onclick="return confirm('清空所有文件？')">清空</a></h2>
-<table><tr><th>#</th><th>文件名</th><th>时间</th><th>操作</th></tr>{no_data if not generated_files else rows}</table><script>setInterval(()=>location.reload(),10000)</script></body></html>""")
+<table><tr><th>#</th><th>文件名</th><th>时间</th><th>操作</th></tr>{no_data if not generated_files else rows}</table><script>
+setInterval(()=>location.reload(),10000);
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){var bk=document.querySelector('a[href*="config"]');if(bk)bk.click()}});
+</script></body></html>""")
 
 @app.get("/api/files/{file_id}")
 async def download_file(file_id:int):
