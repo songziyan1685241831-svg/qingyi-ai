@@ -640,72 +640,42 @@ emotion:(d)=>`
 ${renderField('emotion_enabled','表情开关','select',[{value:'true',label:'开启'},{value:'false',label:'关闭'}])}
 ${renderField('emotion_style','表情模式','select',[{value:'auto',label:'自动识别'},{value:'fixed',label:'固定表情'},{value:'random',label:'随机变换'}])}
 </div>
-<div class="card" style="cursor:default" id="emotion-picker-card">
-<h2 style="font-size:14px;margin-bottom:10px">🎯 固定表情选择（固定表情模式时启用）</h2>
-<p style="font-size:11px;color:#888;margin-bottom:8px">点击下方表情设置固定显示的表情：</p>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px" id="fixed-emoji-grid">
-${Object.entries({"happy":"😊","sad":"😢","angry":"😠","surprised":"😮","sleepy":"😴","thinking":"🤔","neutral":"😐","laughing":"😂","love":"🥰","confused":"😕","singing":"🎵"}).map(([k,v])=>{
-  const cur = (d.custom_emojis||{})[k] || v;
-  const active = d.fixed_emotion===k ? 'border-color:#00d2ff;background:rgba(0,210,255,0.12)' : '';
-  return '<div onclick="setFixedEmotion(\\''+k+'\\')" style="text-align:center;padding:10px 0;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.08);'+active+'" title="设置固定为: '+k+'"><div style="font-size:28px" id="emoji-'+k+'">'+cur+'</div><div style="font-size:10px;color:#888;margin-top:2px" id="elabel-'+k+'">k</div></div>';
-}).join('')}
-</div>
-<div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;text-align:center" id="fixed-emotion-display">
-${d.fixed_emotion ? '当前固定: <span style="font-size:24px">'+(d.custom_emojis||{})[d.fixed_emotion]||EMOJI_MAP[d.fixed_emotion]||"😐"+'</span> '+d.fixed_emotion : '尚未设置固定表情'}
-</div>
+<div class="card" style="cursor:default">
+<h2 style="font-size:14px;margin-bottom:10px">🎯 固定表情选择</h2>
+<p style="font-size:11px;color:#888;margin-bottom:8px">点击下方表情可设为固定显示：</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px" id="fixedEmojiGrid"></div>
+<div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;text-align:center" id="fixedEmojiDisplay">加载中...</div>
 </div>
 <div class="card" style="cursor:default">
-<h2 style="font-size:14px;margin-bottom:10px">✏️ 自定义每个情绪的表情符号</h2>
-<p style="font-size:11px;color:#888;margin-bottom:8px">点击符号可以替换成你喜欢的表情：</p>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px">
-${Object.entries({"happy":"😊","sad":"😢","angry":"😠","surprised":"😮","sleepy":"😴","thinking":"🤔","neutral":"😐","laughing":"😂","love":"🥰","confused":"😕","singing":"🎵"}).map(([k,v])=>{
-  const cur = (d.custom_emojis||{})[k] || v;
-  return '<div onclick="pickEmoji(\\''+k+'\\',\\''+cur+'\\')" style="text-align:center;padding:10px 0;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.08);transition:all 0.15s" title="点击更换"><div style="font-size:28px" id="cemoji-'+k+'">'+cur+'</div><div style="font-size:10px;color:#888;margin-top:2px">'+({"happy":"开心","sad":"难过","angry":"生气","surprised":"惊讶","sleepy":"困了","thinking":"思考","neutral":"平静","laughing":"大笑","love":"爱你","confused":"疑惑","singing":"唱歌"}[k]||k)+'</div></div>';
-}).join('')}
+<h2 style="font-size:14px;margin-bottom:10px">✏️ 自定义表情符号</h2>
+<p style="font-size:11px;color:#888;margin-bottom:8px">点击表情可替换：</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px" id="customEmojiGrid"></div>
 </div>
-</div>
-<button class="btn" onclick="saveAll()">💾 保存</button><div id="msg-emotion" class="msg"></div>
-<script>
-var EMOJI_PICKER = ["😊","😂","🥰","😢","😠","😮","😴","🤔","😐","😕","🎵","😎","🤩","🥳","😏","😭","😱","🤗","🤔","😈","👻","💀","👽","👍","❤️","🔥","✨","🎉","💯","💪","🫡","🤝","🐱","🐶","🐰","🦊","🐸","🐼","🌙","⭐","🌸","🌈","🍀","🎶","✅"];
-function setFixedEmotion(k){
-  var cur = CFG.fixed_emotion;
-  CFG.fixed_emotion = CFG.fixed_emotion === k ? '' : k;
-  document.getElementById('fixed-emotion-display').innerHTML = CFG.fixed_emotion ? '当前固定: <span style="font-size:24px">'+getEmojiChar(k)+'</span> '+k : '尚未设置固定表情';
-  document.querySelectorAll('#fixed-emoji-grid > div').forEach(function(el,i){
-    el.style.borderColor = el.getAttribute('onclick').includes("'"+CFG.fixed_emotion+"'") ? '#00d2ff' : 'rgba(255,255,255,0.08)';
-    el.style.background = el.getAttribute('onclick').includes("'"+CFG.fixed_emotion+"'") ? 'rgba(0,210,255,0.12)' : 'rgba(255,255,255,0.03)';
-  });
-}
-function getEmojiChar(k){
-  var custom = CFG.custom_emojis||{};
-  if(custom[k])return custom[k];
-  var map = {"happy":"😊","sad":"😢","angry":"😠","surprised":"😮","sleepy":"😴","thinking":"🤔","neutral":"😐","laughing":"😂","love":"🥰","confused":"😕","singing":"🎵"};
-  return map[k]||"😐";
-}
-function pickEmoji(k,cur){
-  var picker = document.createElement('div');
-  picker.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:200;display:flex;justify-content:center;align-items:center';
-  var box = document.createElement('div');
-  box.style.cssText = 'background:#1a1a2e;border-radius:16px;padding:20px;max-width:360px;width:90%;border:1px solid rgba(255,255,255,0.1)';
-  box.innerHTML = '<h3 style="font-size:14px;margin-bottom:12px;color:#e0e0e0">选择 '+k+' 的表情</h3><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">'+
-    EMOJI_PICKER.map(function(e){
-      var sel = e===cur ? 'style="background:rgba(0,210,255,0.15);border:1px solid #00d2ff"' : 'style="background:rgba(255,255,255,0.04);border:1px solid transparent"';
-      return '<div onclick="selectEmoji(\\''+k+'\\',this)" '+sel+' data-emoji="'+e+'" class="emoji-opt" style="text-align:center;padding:8px 0;border-radius:8px;cursor:pointer;font-size:26px">'+e+'</div>';
-    }).join('') +
-    '</div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;margin-top:12px;border:none;border-radius:8px;background:rgba(255,255,255,0.06);color:#aaa;cursor:pointer">取消</button>';
-  picker.appendChild(box);
-  document.body.appendChild(picker);
-}
-function selectEmoji(k,el){
-  var emoji = el.getAttribute('data-emoji');
-  if(!CFG.custom_emojis)CFG.custom_emojis={};
-  CFG.custom_emojis[k]=emoji;
-  document.getElementById('cemoji-'+k).textContent=emoji;
-  document.getElementById('emoji-'+k).textContent=emoji;
-  el.parentElement.parentElement.remove();
-}
-</script>`,
-conversation:(d)=>`
+<button class="btn" onclick="saveAll()">💾 保存</button><div id="msg-emotion" class="msg"></div><script>
+(function(){if(!CFG.custom_emojis)CFG.custom_emojis={};
+var EM={"happy":"😊","sad":"😢","angry":"😠","surprised":"😮","sleepy":"😴","thinking":"🤔","neutral":"😐","laughing":"😂","love":"🥰","confused":"😕","singing":"🎵"};
+var EN={"happy":"开心","sad":"难过","angry":"生气","surprised":"惊讶","sleepy":"困了","thinking":"思考","neutral":"平静","laughing":"大笑","love":"爱你","confused":"疑惑","singing":"唱歌"};
+var EP=["😊","😂","🥰","😢","😠","😮","😴","🤔","😐","😕","🎵","😎","🤩","🥳","😏","😭","😱","🤗","🤔","😈","👻","💀","👽","👍","❤️","🔥","✨","🎉","💯","💪","🫡","🤝","🐱","🐶","🐰","🦊","🐸","🐼","🌙","⭐","🌸","🌈","🍀","🎶","✅"];
+
+function re(){var h1='',h2='',fe=CFG.fixed_emotion||'';
+Object.keys(EM).forEach(function(k){var e=CFG.custom_emojis[k]||EM[k];
+var a=fe===k?'border-color:#00d2ff;background:rgba(0,210,255,0.12)':'';
+h1+='<div onclick="setFE(''+k+'')" style="text-align:center;padding:10px 0;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;border:1px solid '+(a?'#00d2ff':'rgba(255,255,255,0.08)')+'" title="固定: '+EN[k]+'"><div style="font-size:28px">'+e+'</div><div style="font-size:10px;color:#888">'+EN[k]+'</div></div>';
+h2+='<div onclick="sp(''+k+'',''+e+'')" style="text-align:center;padding:10px 0;background:rgba(255,255,255,0.03);border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,0.08)"><div style="font-size:28px" id="ce_'+k+'">'+e+'</div><div style="font-size:10px;color:#888">'+EN[k]+'</div></div>'});
+document.getElementById('fixedEmojiGrid').innerHTML=h1;
+document.getElementById('customEmojiGrid').innerHTML=h2;
+document.getElementById('fixedEmojiDisplay').innerHTML=fe?'当前固定: <span style="font-size:24px">'+(CFG.custom_emojis[fe]||EM[fe])+'</span> '+EN[fe]:'尚未设置固定表情';}
+
+function setFE(k){CFG.fixed_emotion=CFG.fixed_emotion===k?'':k;re();}
+
+function sp(k,c){var d=document.createElement('div');
+d.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:200;display:flex;justify-content:center;align-items:center';
+d.innerHTML='<div style="background:#1a1a2e;border-radius:16px;padding:20px;max-width:360px;width:90%;border:1px solid rgba(255,255,255,0.1)"><h3 style="font-size:14px;margin-bottom:12px;color:#e0e0e0">选择 '+EN[k]+'</h3><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">'+EP.map(function(e){return '<div onclick="pk(''+k+'',''+e+'',this)" style="text-align:center;padding:8px 0;border-radius:8px;cursor:pointer;font-size:26px;background:'+(e===c?'rgba(0,210,255,0.15)':'rgba(255,255,255,0.04)')+';border:1px solid '+(e===c?'#00d2ff':'transparent')+'">'+e+'</div>'}).join('')+'</div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;margin-top:12px;border:none;border-radius:8px;background:rgba(255,255,255,0.06);color:#aaa;cursor:pointer">取消</button></div>';
+document.body.appendChild(d);}
+
+function pk(k,e,el){CFG.custom_emojis[k]=e;document.getElementById('ce_'+k).textContent=e;if(CFG.fixed_emotion===k)re();el.parentElement.parentElement.parentElement.remove();}
+re();})();
+</script>`,conversation:(d)=>`
 <div class="back" onclick="showPage('main')">←</div>
 <div class="card" style="cursor:default"><h2 style="font-size:14px;margin-bottom:14px">💬 对话与记忆</h2>
 <div class="gr">
