@@ -3,14 +3,10 @@ from fastapi import FastAPI, responses, Request
 from datetime import datetime
 import uvicorn,httpx,edge_tts
 
-VOLC_APPID = "你的火山引擎AppID"
-VOLC_AT = "你的火山引擎AccessToken"
-DS_KEY = "你的DeepSeek API Key"
-
 logging.basicConfig(level=logging.INFO);log=logging.getLogger("QinYi")
 
 DEFAULT_PROVIDERS = [
-    {"name":"DeepSeek","api_url":"https://api.deepseek.com","api_key":DS_KEY,"models":"deepseek-chat,deepseek-reasoner","selected":"deepseek-chat","priority":1,"enabled":True},
+    {"name":"DeepSeek","api_url":"https://api.deepseek.com","api_key":"","models":"deepseek-chat,deepseek-reasoner","selected":"deepseek-chat","priority":1,"enabled":True},
     {"name":"Claude","api_url":"https://api.anthropic.com","api_key":"","models":"claude-opus-4-8-20250514,claude-sonnet-5-20250601","selected":"claude-sonnet-5-20250601","priority":2,"enabled":False,"headers":"{\"anthropic-version\":\"2023-06-01\"}"},
     {"name":"OpenAI","api_url":"https://api.openai.com","api_key":"","models":"gpt-4o,gpt-4o-mini","selected":"gpt-4o","priority":3,"enabled":False},
 ]
@@ -21,6 +17,10 @@ DEFAULT_MCP = [
 CFG={
     "config_password":"songziyan",
     "bot_name":"琴一","master_name":"主人",
+    "volc_appid":"你的火山引擎AppID","volc_at":"你的火山引擎AccessToken","ds_key":"你的DeepSeek API Key",
+    "sys_prompt":"你是琴一，一个温柔可爱的AI陪伴机器人。说话像朋友一样自然，关心主人的情绪。称呼主人为\"主人\"。",
+    "personality_tone":"温柔","conversation_style":"简洁","formality":"朋友",
+    "tts_voice":"zh-CN-XiaoxiaoNeural","tts_speed":"1.0","tts_pitch":"0","tts_volume":"1.0",
     "sys_prompt":"你是琴一，一个温柔可爱的AI陪伴机器人。说话像朋友一样自然，关心主人的情绪。称呼主人为\"主人\"。",
     "personality_tone":"温柔","conversation_style":"简洁","formality":"朋友",
     "tts_voice":"zh-CN-XiaoxiaoNeural","tts_speed":"1.0","tts_pitch":"0","tts_volume":"1.0",
@@ -231,9 +231,9 @@ async def get_sys_msg(s)->list:
 
 # ====== 核心流程 ======
 async def asr(s):
-    h={"Authorization":f"Bearer; {VOLC_AT}"}
+    h={"Authorization":f"Bearer; {CFG.get('volc_at','')}"}
     async with websockets.connect("wss://openspeech.bytedance.com/api/v2/asr",extra_headers=h)as a:
-        await a.send(json.dumps({"app":{"appid":VOLC_APPID,"cluster":"volcengine_input_common"},"user":{"uid":s.id},"audio":{"format":"opus","rate":16000}}))
+        await a.send(json.dumps({"app":{"appid":CFG.get('volc_appid',''),"cluster":"volcengine_input_common"},"user":{"uid":s.id},"audio":{"format":"opus","rate":16000}}))
         async def sa():
             while True:
                 d=await s.q.get()
@@ -333,7 +333,13 @@ async def gc():
 @app.post("/api/config")
 async def sc(d:dict):
     for k in d:
-        if k in CFG:CFG[k]=d[k]
+        if k in CFG:
+            CFG[k]=d[k]
+            # 同步 ds_key 到 DeepSeek 供应商
+            if k=="ds_key":
+                for p in CFG.get("llm_providers",[]):
+                    if p.get("name")=="DeepSeek":
+                        p["api_key"]=d[k]
     return{"status":"ok"}
 
 @app.get("/api/stats")
@@ -361,7 +367,7 @@ async def files_page():
 <h2>📁 文件 <a href="/api/files/clear" style="font-size:12px;font-weight:normal" onclick="return confirm('清空所有文件？')">清空</a></h2>
 <table><tr><th>#</th><th>文件名</th><th>时间</th><th>操作</th></tr>{no_data if not generated_files else rows}</table><script>
 setInterval(()=>location.reload(),10000);
-document.addEventListener('keydown',function(e){if(e.key==='Escape'){var bk=document.querySelector('a[href*="config"]');if(bk)bk.click()}});
+document.addEventListener('keydown',function(e){{if(e.key==='Escape'){{var bk=document.querySelector('a[href*="config"]');if(bk)bk.click()}}}});
 </script></body></html>""")
 
 @app.get("/api/files/{file_id}")
@@ -716,6 +722,12 @@ ${renderField('enable_ota','OTA自动升级','select',[{value:'true',label:'开�
 ${renderField('ota_url','OTA地址(可选)')}
 ${renderField('enable_debug','调试日志','select',[{value:'false',label:'关闭'},{value:'true',label:'开启'}])}
 ${renderField('timezone','时区','select',[{value:'Asia/Shanghai',label:'中国标准时间'},{value:'Asia/Tokyo',label:'日本'},{value:'America/New_York',label:'美东'},{value:'Europe/London',label:'伦敦'}])}
+</div>
+<div class="card" style="cursor:default"><h2 style="font-size:14px;margin-bottom:14px">🔑 密钥管理</h2>
+<p style="font-size:11px;color:#888;margin-bottom:8px">火山引擎 ASR 和 DeepSeek 密钥。修改后需要重启服务生效。</p>
+${renderField('volc_appid','火山引擎 AppID')}
+${renderField('volc_at','火山引擎 AccessToken')}
+${renderField('ds_key','DeepSeek API Key')}
 </div><button class="btn" onclick="saveAll()">💾 保存</button><div id="msg-network" class="msg"></div>`,
 api:(d)=>renderApi(d),
 mcp:(d)=>renderMcp(d),
@@ -758,7 +770,14 @@ async function saveAll(){
 </script></body></html>"""
 
 @app.on_event("startup")
-async def su():asyncio.create_task(wss())
+async def su():
+    # 启动时同步 ds_key 到 DeepSeek 供应商
+    ds = CFG.get("ds_key","")
+    if ds:
+        for p in CFG.get("llm_providers",[]):
+            if p.get("name")=="DeepSeek" and not p.get("api_key"):
+                p["api_key"]=ds
+    asyncio.create_task(wss())
 async def wss():
     async def h(w):await hdl(w)
     async with websockets.serve(h,"0.0.0.0",8001):
