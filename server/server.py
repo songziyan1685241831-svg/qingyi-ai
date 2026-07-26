@@ -1,5 +1,6 @@
 import asyncio,json,uuid,logging,websockets,random,time,os,hashlib
 from fastapi import FastAPI, responses, Request
+from fastapi import Body
 from datetime import datetime
 import uvicorn,httpx,edge_tts
 
@@ -331,12 +332,9 @@ async def gc():
     return pub
 
 @app.post("/api/config")
-async def sc(d:dict):
+async def sc(d: dict = Body(...)):
     for k in d:
         if k in CFG:CFG[k]=d[k]
-        # 火山引擎密钥更新时同步到 DeepSeek 供应商的 api_key（兼容旧版用户）
-        if k=="volc_appid" or k=="volc_at":
-            pass  # 只做 CFG 存储，ASR 功能直接从 CFG 读取
     return{"status":"ok"}
 
 @app.get("/api/stats")
