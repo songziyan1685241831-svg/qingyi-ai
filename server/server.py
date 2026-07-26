@@ -516,7 +516,7 @@ function renderMain(data){
     <div class="card-right">›</div></div></div>
     <div class="card" onclick="window.location.href='/files'"><div class="card-row">
     <div class="card-left"><div class="card-title">📁 记录与文件</div><div class="card-desc">对话记录 · 文件管理 · 下载</div></div>
-    <div class="card-right">›</div></div></a>
+    <div class="card-right">›</div></div></div>
     <button class="btn" onclick="saveAll()">💾 保存全部配置</button>
     <div id="msg-main" class="msg"></div>`;
 }
