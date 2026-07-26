@@ -527,40 +527,6 @@ function renderMain(data){
     <div id="msg-main" class="msg"></div>`;
 }
 
-// ====== API配置页 ======
-function renderApi(data){
-    let html=`<div class="back" onclick="showPage('main')">←</div>
-    <h2 style="font-size:18px;margin-bottom:12px">🔑 API 密钥与模型配置</h2>
-    <p style="font-size:12px;color:#888;margin-bottom:16px">可添加多个LLM供应商，按优先级自动切换。一个不行自动换下一个。</p>`;
-    (data.llm_providers||[]).forEach((p,i)=>{
-        html+=`<div class="item-card">
-        <div class="item-hdr">
-            <div class="item-name">${p.name||'未命名'}</div>
-            <div class="item-actions">
-                <label class="switch"><input type="checkbox" ${p.enabled?'checked':''} onchange="updateProvider(${i},'enabled',this.checked)"><span class="sl"></span></label>
-                <button class="btn-s btn-d" onclick="removeProvider(${i})">✕</button>
-            </div>
-        </div>
-        <label>显示名称</label>
-        <input value="${escapeHtml(p.name||'')}" onchange="updateProvider(${i},'name',this.value)">
-        <label>API 调用地址</label>
-        <input value="${escapeHtml(p.api_url||'')}" placeholder="https://api.deepseek.com" onchange="updateProvider(${i},'api_url',this.value)">
-        <label>API Key</label>
-        <input value="${p.api_key||''}" ${p.api_key==='••••••'?'placeholder=已保存':''} onchange="updateProvider(${i},'api_key',this.value)" ${p.api_key!=='••••••'?'':'style=border-color:rgba(0,210,255,0.3)'}>
-        <label>可用模型（逗号分隔）</label>
-        <input value="${escapeHtml(p.models||'')}" placeholder="deepseek-chat,deepseek-reasoner" onchange="updateProvider(${i},'models',this.value)">
-        <div class="gr">
-        <div><label>当前选用</label><input value="${escapeHtml(p.selected||'')}" placeholder="deepseek-chat" onchange="updateProvider(${i},'selected',this.value)"></div>
-        <div><label>优先级(1最高)</label><input type="number" value="${p.priority||99}" min="1" max="99" onchange="updateProvider(${i},'priority',parseInt(this.value)||99)"></div>
-        </div>
-        <label>额外请求头(JSON,Claude需要)</label>
-        <input value="${escapeHtml(p.headers||'')}" placeholder='{"anthropic-version":"2023-06-01"}' onchange="updateProvider(${i},'headers',this.value)">
-        </div>`;
-    });
-    html+=`<button class="add-btn" onclick="addProvider()">+ 添加供应商 (DeepSeek/Claude/OpenAI/自定义)</button>`;
-    html+=`<button class="btn" onclick="saveAll()">💾 保存</button><div id="msg-api" class="msg"></div>`;
-    return html;
-}
 function escapeHtml(s){
     if(!s)return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
