@@ -686,6 +686,9 @@ ${renderField('ota_url','OTA地址(可选)')}
 ${renderField('enable_debug','调试日志','select',[{value:'false',label:'关闭'},{value:'true',label:'开启'}])}
 ${renderField('timezone','时区','select',[{value:'Asia/Shanghai',label:'中国标准时间'},{value:'Asia/Tokyo',label:'日本'},{value:'America/New_York',label:'美东'},{value:'Europe/London',label:'伦敦'}])}
 </div><button class="btn" onclick="saveAll()">💾 保存</button><div id="msg-network" class="msg"></div>`,
+api:(d)=>renderApi(d),
+mcp:(d)=>renderMcp(d),
+};
 
 function renderApi(data){
     let html=`<div class="back" onclick="showPage('main')">←</div>
@@ -740,7 +743,6 @@ function updateAsrBadge(){
     const b=document.getElementById('asr-badge');
     if(b)b.textContent=CFG.volc_appid&&CFG.volc_at?'● 已配置':'● 待配置';
 }
-};
 
 function render(page,data){
     data=data||CFG;
