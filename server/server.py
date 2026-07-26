@@ -672,7 +672,7 @@ document.body.appendChild(d);}
 
 function pk(k,e,el){CFG.custom_emojis[k]=e;document.getElementById('ce_'+k).textContent=e;if(CFG.fixed_emotion===k)re();el.parentElement.parentElement.parentElement.remove();}
 re();})();
-</script>`,conversation:(d)=>`
+</scr`+'`+`ipt>`,conversation:(d)=>`
 <div class="back" onclick="showPage('main')">←</div>
 <div class="card" style="cursor:default"><h2 style="font-size:14px;margin-bottom:14px">💬 对话与记忆</h2>
 <div class="gr">
