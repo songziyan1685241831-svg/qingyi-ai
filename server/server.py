@@ -347,7 +347,7 @@ async def stats():return{
 # ====== 文件管理页面 ======
 @app.get("/files")
 async def files_page():
-    rows = "".join(f'<tr><td>#{f["id"]}</td><td>{f["filename"]}</td><td>{f["time"]}</td><td><a href="/api/files/{f["id"]}" download>⬇</a></td></tr>' for f in reversed(generated_files[-50:]))
+    rows = "".join(f'<tr><td>#{f["id"]}</td><td>{f["filename"]}</td><td>{f["time"]}</td><td><a href="/api/files/{f["id"]}" download>⬇</div></td></tr>' for f in reversed(generated_files[-50:]))
     chat_rows = ""
     for sid, s in list(sessions.items())[:5]:
         chat_rows += f"<tr><td>{sid[:6]}..</td><td>{s.msg_count}条</td><td>{(time.time()-s.created)//60:.0f}分钟</td></tr>"
@@ -514,7 +514,7 @@ function renderMain(data){
     <div class="card" onclick="showPage('network')"><div class="card-row">
     <div class="card-left"><div class="card-title">🌐 网络与高级</div><div class="card-desc">服务器地址 · OTA · 调试 · 时区</div></div>
     <div class="card-right">›</div></div></div>
-    <a href="/files" class="card" style="text-decoration:none"><div class="card-row">
+    <div class="card" onclick="window.location.href='/files'"><div class="card-row">
     <div class="card-left"><div class="card-title">📁 记录与文件</div><div class="card-desc">对话记录 · 文件管理 · 下载</div></div>
     <div class="card-right">›</div></div></a>
     <button class="btn" onclick="saveAll()">💾 保存全部配置</button>
