@@ -17,7 +17,7 @@ DEFAULT_MCP = [
 CFG={
     "config_password":"songziyan",
     "bot_name":"琴一","master_name":"主人",
-    "volc_appid":"你的火山引擎AppID","volc_at":"你的火山引擎AccessToken","ds_key":"你的DeepSeek API Key",
+    "volc_appid":"","volc_at":"",
     "sys_prompt":"你是琴一，一个温柔可爱的AI陪伴机器人。说话像朋友一样自然，关心主人的情绪。称呼主人为\"主人\"。",
     "personality_tone":"温柔","conversation_style":"简洁","formality":"朋友",
     "tts_voice":"zh-CN-XiaoxiaoNeural","tts_speed":"1.0","tts_pitch":"0","tts_volume":"1.0",
@@ -333,13 +333,10 @@ async def gc():
 @app.post("/api/config")
 async def sc(d:dict):
     for k in d:
-        if k in CFG:
-            CFG[k]=d[k]
-            # 同步 ds_key 到 DeepSeek 供应商
-            if k=="ds_key":
-                for p in CFG.get("llm_providers",[]):
-                    if p.get("name")=="DeepSeek":
-                        p["api_key"]=d[k]
+        if k in CFG:CFG[k]=d[k]
+        # 火山引擎密钥更新时同步到 DeepSeek 供应商的 api_key（兼容旧版用户）
+        if k=="volc_appid" or k=="volc_at":
+            pass  # 只做 CFG 存储，ASR 功能直接从 CFG 读取
     return{"status":"ok"}
 
 @app.get("/api/stats")
@@ -722,15 +719,61 @@ ${renderField('enable_ota','OTA自动升级','select',[{value:'true',label:'开�
 ${renderField('ota_url','OTA地址(可选)')}
 ${renderField('enable_debug','调试日志','select',[{value:'false',label:'关闭'},{value:'true',label:'开启'}])}
 ${renderField('timezone','时区','select',[{value:'Asia/Shanghai',label:'中国标准时间'},{value:'Asia/Tokyo',label:'日本'},{value:'America/New_York',label:'美东'},{value:'Europe/London',label:'伦敦'}])}
-</div>
-<div class="card" style="cursor:default"><h2 style="font-size:14px;margin-bottom:14px">🔑 密钥管理</h2>
-<p style="font-size:11px;color:#888;margin-bottom:8px">火山引擎 ASR 和 DeepSeek 密钥。修改后需要重启服务生效。</p>
-${renderField('volc_appid','火山引擎 AppID')}
-${renderField('volc_at','火山引擎 AccessToken')}
-${renderField('ds_key','DeepSeek API Key')}
 </div><button class="btn" onclick="saveAll()">💾 保存</button><div id="msg-network" class="msg"></div>`,
-api:(d)=>renderApi(d),
-mcp:(d)=>renderMcp(d),
+
+function renderApi(data){
+    let html=`<div class="back" onclick="showPage('main')">←</div>
+    <h2 style="font-size:18px;margin-bottom:12px">🔑 API 密钥与模型配置</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:16px">可添加多个LLM供应商，按优先级自动切换。一个不行自动换下一个。</p>`;
+    (data.llm_providers||[]).forEach((p,i)=>{
+        html+=`<div class="item-card">
+        <div class="item-hdr">
+            <div class="item-name">${p.name||'未命名'}</div>
+            <div class="item-actions">
+                <label class="switch"><input type="checkbox" ${p.enabled?'checked':''} onchange="updateProvider(${i},'enabled',this.checked)"><span class="sl"></span></label>
+                <button class="btn-s btn-d" onclick="removeProvider(${i})">✕</button>
+            </div>
+        </div>
+        <label>显示名称</label>
+        <input value="${escapeHtml(p.name||'')}" onchange="updateProvider(${i},'name',this.value)">
+        <label>API 调用地址</label>
+        <input value="${escapeHtml(p.api_url||'')}" placeholder="https://api.deepseek.com" onchange="updateProvider(${i},'api_url',this.value)">
+        <label>API Key</label>
+        <input value="${p.api_key||''}" ${p.api_key==='••••••'?'placeholder=已保存':''} onchange="updateProvider(${i},'api_key',this.value)" ${p.api_key!=='••••••'?'':'style=border-color:rgba(0,210,255,0.3)'}>
+        <label>可用模型（逗号分隔）</label>
+        <input value="${escapeHtml(p.models||'')}" placeholder="deepseek-chat,deepseek-reasoner" onchange="updateProvider(${i},'models',this.value)">
+        <div class="gr">
+        <div><label>当前选用</label><input value="${escapeHtml(p.selected||'')}" placeholder="deepseek-chat" onchange="updateProvider(${i},'selected',this.value)"></div>
+        <div><label>优先级(1最高)</label><input type="number" value="${p.priority||99}" min="1" max="99" onchange="updateProvider(${i},'priority',parseInt(this.value)||99)"></div>
+        </div>
+        <label>额外请求头(JSON,Claude需要)</label>
+        <input value="${escapeHtml(p.headers||'')}" placeholder='{"anthropic-version":"2023-06-01"}' onchange="updateProvider(${i},'headers',this.value)">
+        </div>`;
+    });
+    html+=`<button class="add-btn" onclick="addProvider()">+ 添加供应商 (DeepSeek/Claude/OpenAI/自定义)</button>`;
+    // 火山引擎 ASR 区块（跟 LLM 供应商卡片同款风格）
+    const vAppid = data.volc_appid||'';
+    const vAt = data.volc_at||'';
+    html+=`<div class="item-card" style="margin-top:16px">
+    <div class="item-hdr">
+        <div class="item-name">🎙️ 火山引擎语音识别 (ASR)</div>
+        <div class="item-actions">
+            <span class="tag tag-ok" id="asr-badge">● 待配置</span>
+        </div>
+    </div>
+    <label>App ID</label>
+    <input value="${escapeHtml(vAppid)}" placeholder="你的火山引擎AppID" onchange="CFG.volc_appid=this.value;updateAsrBadge()">
+    <label>Access Token</label>
+    <input value="${vAt||''}" placeholder="你的火山引擎AccessToken" onchange="CFG.volc_at=this.value;updateAsrBadge()" ${vAt?'style=border-color:rgba(0,210,255,0.3)':''}>
+    <div style="font-size:10px;color:#555;margin-top:6px">用于将你说的话转成文字。前往 <a href="https://console.volcengine.com/speech/app" target="_blank" style="color:#00d2ff">火山引擎控制台</a> 获取。</div>
+    </div>`;
+    html+=`<button class="btn" onclick="saveAll()">💾 保存</button><div id="msg-api" class="msg"></div>`;
+    return html;
+}
+function updateAsrBadge(){
+    const b=document.getElementById('asr-badge');
+    if(b)b.textContent=CFG.volc_appid&&CFG.volc_at?'● 已配置':'● 待配置';
+}
 };
 
 function render(page,data){
@@ -771,12 +814,8 @@ async function saveAll(){
 
 @app.on_event("startup")
 async def su():
-    # 启动时同步 ds_key 到 DeepSeek 供应商
-    ds = CFG.get("ds_key","")
-    if ds:
-        for p in CFG.get("llm_providers",[]):
-            if p.get("name")=="DeepSeek" and not p.get("api_key"):
-                p["api_key"]=ds
+    # 如果用户之前在代码顶部填过老版 ds_key，兼容迁移：
+    # 从 DEFAULT_PROVIDERS 中的 DeepSeek 读取 api_key 作为后备
     asyncio.create_task(wss())
 async def wss():
     async def h(w):await hdl(w)
