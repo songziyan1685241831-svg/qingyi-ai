@@ -330,46 +330,12 @@ async def root():return{"status":"ok","name":"QinYi","ver":"5.3","online":len(se
 
 @app.get("/api/config")
 async def gc():
-    pub=dict(CFG)
-    for k in ["llm_providers","mcp_servers"]:
-        pub[k]=[]
-        for item in CFG.get(k,[]):
-            cp=dict(item)
-            for sk in ["api_key","token"]:
-                if cp.get(sk):cp[sk]="••••••"
-            pub[k].append(cp)
-    return pub
+    return dict(CFG)
 
 @app.post("/api/config")
 async def sc(d: dict = Body(...)):
     for k in d:
-        if k == "llm_providers":
-            old = CFG.get("llm_providers", [])
-            new_list = []
-            for item in d[k]:
-                cp = dict(item)
-                # 如果前端传回掩码, 保留旧值
-                if cp.get("api_key") == "••••••":
-                    for old_item in old:
-                        if old_item.get("name") == cp.get("name"):
-                            cp["api_key"] = old_item.get("api_key", "")
-                            break
-                new_list.append(cp)
-            CFG[k] = new_list
-        elif k == "mcp_servers":
-            old = CFG.get("mcp_servers", [])
-            new_list = []
-            for item in d[k]:
-                cp = dict(item)
-                if cp.get("token") == "••••••":
-                    for old_item in old:
-                        if old_item.get("name") == cp.get("name"):
-                            cp["token"] = old_item.get("token", "")
-                            break
-                new_list.append(cp)
-            CFG[k] = new_list
-        elif k in CFG:
-            CFG[k] = d[k]
+        if k in CFG:CFG[k]=d[k]
     return{"status":"ok"}
 
 @app.get("/api/stats")
@@ -804,16 +770,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'){const cur=d
 
 async function saveAll(){
     const data={};
-    Object.keys(CFG).forEach(k=>{
-        // llm_providers 和 mcp_servers 需要特殊处理：不把掩码传回后端
-        if(k==='llm_providers'){
-            data[k]=CFG[k].map(p=>{const cp={...p};if(cp.api_key==='••••••')delete cp.api_key;return cp});
-        }else if(k==='mcp_servers'){
-            data[k]=CFG[k].map(m=>{const cm={...m};if(cm.token==='••••••')delete cm.token;return cm});
-        }else{
-            data[k]=CFG[k];
-        }
-    });
+    Object.keys(CFG).forEach(k=>{data[k]=CFG[k]});
     const ok=await saveCfg(data);
     show(ok?'✅ 全部配置已保存':'❌ 保存失败',ok?'s':'e');
     setTimeout(()=>{document.querySelectorAll('.msg').forEach(el=>el.style.display='none')},3000);
