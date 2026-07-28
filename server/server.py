@@ -374,6 +374,11 @@ setInterval(()=>location.reload(),10000);
 document.addEventListener('keydown',function(e){{if(e.key==='Escape'){{var bk=document.querySelector('a[href*="config"]');if(bk)bk.click()}}}});
 </script></body></html>""")
 
+@app.get("/api/files/clear")
+async def clear_files():
+    generated_files.clear(); file_counter[0]=0
+    return responses.RedirectResponse("/files")
+
 @app.get("/api/files/{file_id}")
 async def download_file(file_id:int):
     for f in generated_files:
@@ -381,11 +386,6 @@ async def download_file(file_id:int):
             fp = os.path.join(FILES_DIR, f["path"])
             if os.path.exists(fp): return responses.FileResponse(fp, filename=f["filename"])
     return responses.HTMLResponse("文件不存在", status_code=404)
-
-@app.get("/api/files/clear")
-async def clear_files():
-    generated_files.clear(); file_counter[0]=0
-    return responses.RedirectResponse("/files")
 
 # ====== 密码验证 + 配置页面 ======
 @app.get("/config")
