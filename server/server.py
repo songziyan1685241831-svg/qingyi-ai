@@ -238,9 +238,9 @@ async def get_sys_msg(s)->list:
 
 # ====== 核心流程 ======
 async def asr(s):
-    h={"Authorization":f"Bearer; {CFG.get('volc_at','')}"}
-    async with websockets.connect("wss://openspeech.bytedance.com/api/v2/asr",extra_headers=h)as a:
-        await a.send(json.dumps({"app":{"appid":CFG.get('volc_appid',''),"cluster":"volcengine_input_common"},"user":{"uid":s.id},"audio":{"format":"opus","rate":16000}}))
+    h=[("Authorization",f"Bearer; {CFG.get('volc_at','')}")]
+    async with websockets.connect("wss://openspeech.bytedance.com/api/v2/asr",additional_headers=h)as a:
+        await a.send(json.dumps({"app":{"appid":CFG.get('volc_appid',''),"cluster":"volcengine_input_common"},"user":{"uid":s.id},"audio":{"format":"opus","rate":16000}}).encode())
         async def sa():
             while True:
                 d=await s.q.get()
