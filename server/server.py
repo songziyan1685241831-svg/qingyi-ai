@@ -804,7 +804,16 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'){const cur=d
 
 async function saveAll(){
     const data={};
-    Object.keys(CFG).forEach(k=>{data[k]=CFG[k]});
+    Object.keys(CFG).forEach(k=>{
+        // llm_providers 和 mcp_servers 需要特殊处理：不把掩码传回后端
+        if(k==='llm_providers'){
+            data[k]=CFG[k].map(p=>{const cp={...p};if(cp.api_key==='••••••')delete cp.api_key;return cp});
+        }else if(k==='mcp_servers'){
+            data[k]=CFG[k].map(m=>{const cm={...m};if(cm.token==='••••••')delete cm.token;return cm});
+        }else{
+            data[k]=CFG[k];
+        }
+    });
     const ok=await saveCfg(data);
     show(ok?'✅ 全部配置已保存':'❌ 保存失败',ok?'s':'e');
     setTimeout(()=>{document.querySelectorAll('.msg').forEach(el=>el.style.display='none')},3000);
